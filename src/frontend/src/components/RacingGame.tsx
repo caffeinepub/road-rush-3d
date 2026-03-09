@@ -477,15 +477,103 @@ function GameScene({ gameRef }: { gameRef: React.MutableRefObject<GameRef> }) {
   );
 }
 
+// ─── Touch Control Button ──────────────────────────────────────────────────────
+function TouchButton({
+  direction,
+  gameRef,
+}: {
+  direction: "left" | "right";
+  gameRef: React.MutableRefObject<GameRef>;
+}) {
+  const [pressed, setPressed] = useState(false);
+  const key = direction === "left" ? "ArrowLeft" : "ArrowRight";
+  const isLeft = direction === "left";
+
+  const handlePressStart = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      e.preventDefault();
+      gameRef.current.keys.add(key);
+      setPressed(true);
+    },
+    [gameRef, key],
+  );
+
+  const handlePressEnd = useCallback(
+    (e: React.TouchEvent | React.MouseEvent) => {
+      e.preventDefault();
+      gameRef.current.keys.delete(key);
+      setPressed(false);
+    },
+    [gameRef, key],
+  );
+
+  return (
+    <button
+      type="button"
+      data-ocid={isLeft ? "game.left_button" : "game.right_button"}
+      aria-label={isLeft ? "Move left" : "Move right"}
+      onTouchStart={handlePressStart}
+      onTouchEnd={handlePressEnd}
+      onTouchCancel={handlePressEnd}
+      onMouseDown={handlePressStart}
+      onMouseUp={handlePressEnd}
+      onMouseLeave={handlePressEnd}
+      className="pointer-events-auto select-none"
+      style={{
+        width: 72,
+        height: 72,
+        borderRadius: "50%",
+        background: pressed
+          ? "oklch(0.85 0.25 120 / 0.25)"
+          : "oklch(0.1 0.02 250 / 0.72)",
+        border: `2px solid oklch(0.85 0.25 120 / ${pressed ? "0.9" : "0.55"})`,
+        backdropFilter: "blur(10px)",
+        boxShadow: pressed
+          ? "0 0 20px oklch(0.85 0.25 120 / 0.5), inset 0 0 12px oklch(0.85 0.25 120 / 0.15)"
+          : "0 4px 16px oklch(0 0 0 / 0.4), 0 0 8px oklch(0.85 0.25 120 / 0.15)",
+        transform: pressed ? "scale(0.90)" : "scale(1)",
+        transition:
+          "transform 0.08s ease, box-shadow 0.08s ease, background 0.08s ease, border-color 0.08s ease",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        outline: "none",
+        cursor: "pointer",
+        WebkitTapHighlightColor: "transparent",
+        touchAction: "none",
+        userSelect: "none",
+      }}
+    >
+      <span
+        style={{
+          fontSize: 28,
+          lineHeight: 1,
+          color: pressed ? "oklch(0.98 0.18 120)" : "oklch(0.85 0.25 120)",
+          textShadow: pressed
+            ? "0 0 12px oklch(0.85 0.25 120 / 0.9)"
+            : "0 0 6px oklch(0.85 0.25 120 / 0.5)",
+          transition: "color 0.08s ease",
+          display: "block",
+          pointerEvents: "none",
+        }}
+      >
+        {isLeft ? "◀" : "▶"}
+      </span>
+    </button>
+  );
+}
+
 // ─── HUD Overlay ───────────────────────────────────────────────────────────────
 function HUD({
   score,
   speedLevel,
   speed,
+  gameRef,
 }: {
   score: number;
   speedLevel: number;
   speed: number;
+  gameRef: React.MutableRefObject<GameRef>;
 }) {
   const maxSpeed = INITIAL_SPEED + SPEED_INCREMENT * 20;
   const speedPct = Math.min(
@@ -573,8 +661,8 @@ function HUD({
         </div>
       </div>
 
-      {/* Controls hint */}
-      <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
+      {/* Controls hint - centered bottom, above touch buttons */}
+      <div className="absolute bottom-28 left-1/2 -translate-x-1/2">
         <div
           style={{
             background: "oklch(0.12 0.02 250 / 0.7)",
@@ -586,9 +674,23 @@ function HUD({
             style={{ color: "oklch(0.5 0.04 250)" }}
             className="text-xs font-body"
           >
-            ← → or A D or tap screen to switch lanes
+            ← → or A D • tap buttons to switch lanes
           </span>
         </div>
+      </div>
+
+      {/* Touch buttons - bottom corners, pointer-events-auto */}
+      <div
+        className="absolute bottom-8 left-6"
+        style={{ pointerEvents: "auto" }}
+      >
+        <TouchButton direction="left" gameRef={gameRef} />
+      </div>
+      <div
+        className="absolute bottom-8 right-6"
+        style={{ pointerEvents: "auto" }}
+      >
+        <TouchButton direction="right" gameRef={gameRef} />
       </div>
     </div>
   );
@@ -699,12 +801,13 @@ function StartScreen({ onPlay }: { onPlay: () => void }) {
 
         {/* Controls */}
         <div
-          className="mt-2 flex flex-col items-center gap-2"
+          className="mt-2 flex flex-col items-center gap-3"
           style={{ color: "oklch(0.5 0.04 250)" }}
         >
           <div className="text-xs font-body uppercase tracking-widest">
             Controls
           </div>
+          {/* Keyboard controls row */}
           <div className="flex items-center gap-3">
             <kbd
               className="rounded px-2.5 py-1 text-sm font-bold"
@@ -749,20 +852,37 @@ function StartScreen({ onPlay }: { onPlay: () => void }) {
             </kbd>
             <span className="text-xs">Move Right</span>
           </div>
-          {/* Mobile touch hint */}
+          {/* Touch controls hint */}
           <div
-            className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2"
+            className="flex items-center gap-2 rounded-xl px-4 py-2"
             style={{
-              background: "oklch(0.85 0.25 120 / 0.08)",
+              background: "oklch(0.14 0.025 250)",
               border: "1px solid oklch(0.85 0.25 120 / 0.2)",
             }}
           >
-            <span style={{ fontSize: "0.95rem" }}>📱</span>
+            <span
+              style={{
+                fontSize: 18,
+                color: "oklch(0.85 0.25 120 / 0.8)",
+                lineHeight: 1,
+              }}
+            >
+              ◀
+            </span>
             <span
               className="text-xs font-body"
-              style={{ color: "oklch(0.65 0.08 120)" }}
+              style={{ color: "oklch(0.6 0.05 250)" }}
             >
-              On mobile: tap left/right side of screen
+              Tap on-screen buttons on mobile
+            </span>
+            <span
+              style={{
+                fontSize: 18,
+                color: "oklch(0.85 0.25 120 / 0.8)",
+                lineHeight: 1,
+              }}
+            >
+              ▶
             </span>
           </div>
         </div>
@@ -961,9 +1081,6 @@ export default function RacingGame() {
   const [displaySpeed, setDisplaySpeed] = useState(INITIAL_SPEED);
   const [displayLevel, setDisplayLevel] = useState(1);
 
-  // Touch tracking ref (avoids re-renders)
-  const touchStartXRef = useRef<number | null>(null);
-
   // Sync HUD display from game loop ref
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1061,64 +1178,10 @@ export default function RacingGame() {
     });
   }, []);
 
-  // Touch event handlers for gameplay
-  const handleTouchStart = useCallback((e: React.TouchEvent) => {
-    if (gameRef.current.phase !== "playing") return;
-    if (e.touches.length > 0) {
-      touchStartXRef.current = e.touches[0].clientX;
-    }
-  }, []);
-
-  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
-    if (gameRef.current.phase !== "playing") return;
-
-    const touch = e.changedTouches[0];
-    if (!touch) return;
-
-    const g = gameRef.current;
-    const now = performance.now();
-    const LANE_COOLDOWN = 220;
-
-    if (now - g.lastLaneChange <= LANE_COOLDOWN) return;
-
-    const endX = touch.clientX;
-    const startX = touchStartXRef.current ?? endX;
-    const deltaX = endX - startX;
-    const screenWidth = window.innerWidth;
-
-    let direction: "left" | "right";
-
-    if (Math.abs(deltaX) > 30) {
-      // Swipe gesture
-      direction = deltaX < 0 ? "left" : "right";
-    } else {
-      // Tap — use tap position relative to screen center
-      direction = endX < screenWidth / 2 ? "left" : "right";
-    }
-
-    if (direction === "left") {
-      if (g.playerLane > 0) {
-        g.playerLane--;
-        g.lastLaneChange = now;
-        g.playerTilt = 0.22;
-      }
-    } else {
-      if (g.playerLane < 2) {
-        g.playerLane++;
-        g.lastLaneChange = now;
-        g.playerTilt = -0.22;
-      }
-    }
-
-    touchStartXRef.current = null;
-  }, []);
-
   return (
     <div
-      className="relative w-screen h-screen overflow-hidden touch-manipulation"
+      className="relative w-screen h-screen overflow-hidden"
       style={{ background: "oklch(0.08 0.03 250)" }}
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
     >
       {/* Three.js canvas */}
       <div data-ocid="game.canvas_target" className="absolute inset-0">
@@ -1142,6 +1205,7 @@ export default function RacingGame() {
           score={displayScore}
           speedLevel={displayLevel}
           speed={displaySpeed}
+          gameRef={gameRef}
         />
       )}
 
