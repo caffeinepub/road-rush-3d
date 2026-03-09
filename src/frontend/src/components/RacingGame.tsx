@@ -586,7 +586,7 @@ function HUD({
             style={{ color: "oklch(0.5 0.04 250)" }}
             className="text-xs font-body"
           >
-            ← → or A D to switch lanes
+            ← → or A D or tap screen to switch lanes
           </span>
         </div>
       </div>
@@ -748,6 +748,22 @@ function StartScreen({ onPlay }: { onPlay: () => void }) {
               D
             </kbd>
             <span className="text-xs">Move Right</span>
+          </div>
+          {/* Mobile touch hint */}
+          <div
+            className="mt-1 flex items-center gap-2 rounded-lg px-3 py-2"
+            style={{
+              background: "oklch(0.85 0.25 120 / 0.08)",
+              border: "1px solid oklch(0.85 0.25 120 / 0.2)",
+            }}
+          >
+            <span style={{ fontSize: "0.95rem" }}>📱</span>
+            <span
+              className="text-xs font-body"
+              style={{ color: "oklch(0.65 0.08 120)" }}
+            >
+              On mobile: tap left/right side of screen
+            </span>
           </div>
         </div>
       </div>
@@ -945,6 +961,9 @@ export default function RacingGame() {
   const [displaySpeed, setDisplaySpeed] = useState(INITIAL_SPEED);
   const [displayLevel, setDisplayLevel] = useState(1);
 
+  // Touch tracking ref (avoids re-renders)
+  const touchStartXRef = useRef<number | null>(null);
+
   // Sync HUD display from game loop ref
   useEffect(() => {
     const interval = setInterval(() => {
@@ -1042,10 +1061,64 @@ export default function RacingGame() {
     });
   }, []);
 
+  // Touch event handlers for gameplay
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (gameRef.current.phase !== "playing") return;
+    if (e.touches.length > 0) {
+      touchStartXRef.current = e.touches[0].clientX;
+    }
+  }, []);
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (gameRef.current.phase !== "playing") return;
+
+    const touch = e.changedTouches[0];
+    if (!touch) return;
+
+    const g = gameRef.current;
+    const now = performance.now();
+    const LANE_COOLDOWN = 220;
+
+    if (now - g.lastLaneChange <= LANE_COOLDOWN) return;
+
+    const endX = touch.clientX;
+    const startX = touchStartXRef.current ?? endX;
+    const deltaX = endX - startX;
+    const screenWidth = window.innerWidth;
+
+    let direction: "left" | "right";
+
+    if (Math.abs(deltaX) > 30) {
+      // Swipe gesture
+      direction = deltaX < 0 ? "left" : "right";
+    } else {
+      // Tap — use tap position relative to screen center
+      direction = endX < screenWidth / 2 ? "left" : "right";
+    }
+
+    if (direction === "left") {
+      if (g.playerLane > 0) {
+        g.playerLane--;
+        g.lastLaneChange = now;
+        g.playerTilt = 0.22;
+      }
+    } else {
+      if (g.playerLane < 2) {
+        g.playerLane++;
+        g.lastLaneChange = now;
+        g.playerTilt = -0.22;
+      }
+    }
+
+    touchStartXRef.current = null;
+  }, []);
+
   return (
     <div
-      className="relative w-screen h-screen overflow-hidden"
+      className="relative w-screen h-screen overflow-hidden touch-manipulation"
       style={{ background: "oklch(0.08 0.03 250)" }}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
     >
       {/* Three.js canvas */}
       <div data-ocid="game.canvas_target" className="absolute inset-0">
