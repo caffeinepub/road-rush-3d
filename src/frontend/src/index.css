@@ -1,0 +1,189 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== FONT FACES ===== */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque[opsz,wdth,wght].woff2")
+    format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Outfit";
+  src: url("/assets/fonts/Outfit[wght].woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ===== DESIGN TOKENS ===== */
+@layer base {
+  :root {
+    /* Racing Dark Theme */
+    --background: 0.12 0.02 250;
+    --foreground: 0.96 0.01 100;
+
+    --card: 0.16 0.025 250;
+    --card-foreground: 0.96 0.01 100;
+
+    --popover: 0.16 0.025 250;
+    --popover-foreground: 0.96 0.01 100;
+
+    /* Electric yellow-green primary */
+    --primary: 0.85 0.25 120;
+    --primary-foreground: 0.1 0.02 250;
+
+    /* Vivid red secondary */
+    --secondary: 0.55 0.22 25;
+    --secondary-foreground: 0.96 0.01 100;
+
+    --muted: 0.2 0.02 250;
+    --muted-foreground: 0.6 0.04 250;
+
+    --accent: 0.85 0.25 120;
+    --accent-foreground: 0.1 0.02 250;
+
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 0.96 0.01 100;
+
+    --border: 0.25 0.03 250;
+    --input: 0.2 0.02 250;
+    --ring: 0.85 0.25 120;
+
+    --radius: 0.5rem;
+
+    /* Game-specific tokens */
+    --road: 0.22 0.02 250;
+    --grass: 0.35 0.12 140;
+    --hud-bg: 0.15 0.02 250;
+    --speed-color: 0.85 0.25 120;
+
+    /* Chart colors */
+    --chart-1: 0.85 0.25 120;
+    --chart-2: 0.55 0.22 25;
+    --chart-3: 0.65 0.2 60;
+    --chart-4: 0.55 0.2 200;
+    --chart-5: 0.75 0.18 300;
+
+    /* Sidebar */
+    --sidebar: 0.14 0.02 250;
+    --sidebar-foreground: 0.96 0.01 100;
+    --sidebar-primary: 0.85 0.25 120;
+    --sidebar-primary-foreground: 0.1 0.02 250;
+    --sidebar-accent: 0.85 0.25 120;
+    --sidebar-accent-foreground: 0.1 0.02 250;
+    --sidebar-border: 0.25 0.03 250;
+    --sidebar-ring: 0.85 0.25 120;
+  }
+}
+
+/* ===== BASE STYLES ===== */
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Outfit", sans-serif;
+    overflow: hidden;
+  }
+}
+
+/* ===== GAME ANIMATIONS ===== */
+@keyframes score-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+@keyframes gameover-in {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes slide-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes neon-glow {
+  0%,
+  100% {
+    text-shadow: 0 0 10px oklch(0.85 0.25 120 / 0.8), 0 0 30px
+      oklch(0.85 0.25 120 / 0.4);
+  }
+  50% {
+    text-shadow: 0 0 20px oklch(0.85 0.25 120 / 1), 0 0 60px
+      oklch(0.85 0.25 120 / 0.6);
+  }
+}
+
+@keyframes danger-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+@keyframes float-up {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(0.8);
+  }
+  10% {
+    opacity: 1;
+    transform: translateY(-5px) scale(1);
+  }
+  90% {
+    opacity: 1;
+    transform: translateY(-20px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-30px) scale(0.9);
+  }
+}
+
+.score-pulse {
+  animation: score-pulse 0.3s ease-out;
+}
+
+.gameover-card {
+  animation: gameover-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.hud-slide-in {
+  animation: slide-in-down 0.4s ease-out;
+}
+
+.neon-title {
+  animation: neon-glow 2s ease-in-out infinite;
+}
+
+.danger-flash {
+  animation: danger-pulse 0.5s ease-in-out infinite;
+}
